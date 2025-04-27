@@ -1,12 +1,98 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Sistema de Teste</title>
-</head>
-<body>
-    <h1>Bem-vindo ao meu sistema de teste!</h1>
-    <p>Esse é o site do meu repositório no GitHub.</p>
-</body>
-</html>
+import { useState, useRef } from 'react';
+import { Card, CardContent } from "./components/ui/card";
+import { Input } from "./components/ui/input";
+import { Button } from "./components/ui/button";
+import QRCode from "qrcode";
+import QrScanner from "qr-scanner";
+
+export default function App() {
+  const [produto, setProduto] = useState({
+    nome: "",
+    fabricacao: "",
+    validade: "",
+    lote: ""
+  });
+
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
+  const [dadosLidos, setDadosLidos] = useState(null);
+  const videoRef = useRef(null);
+
+  const gerarQRCode = async () => {
+    const conteudo = `${produto.nome};${produto.fabricacao};${produto.validade};${produto.lote}`;
+    try {
+      const url = await QRCode.toDataURL(conteudo);
+      setQrCodeUrl(url);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const iniciarLeitor = () => {
+    if (videoRef.current) {
+      const scanner = new QrScanner(videoRef.current, result => {
+        const [nome, fabricacao, validade, lote] = result.data.split(";");
+        setDadosLidos({ nome, fabricacao, validade, lote });
+        scanner.stop();
+      });
+      scanner.start();
+    }
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "2rem", padding: "2rem", backgroundColor: "#f3f4f6" }}>
+      <Card style={{ width: "100%", maxWidth: "500px" }}>
+        <CardContent style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <h1 style={{ fontSize: "1.5rem", fontWeight: "bold", textAlign: "center" }}>Cadastro de Produto</h1>
+          <Input
+            placeholder="Nome do produto"
+            value={produto.nome}
+            onChange={(e) => setProduto({ ...produto, nome: e.target.value })}
+          />
+          <Input
+            placeholder="Data de fabricação"
+            type="date"
+            value={produto.fabricacao}
+            onChange={(e) => setProduto({ ...produto, fabricacao: e.target.value })}
+          />
+          <Input
+            placeholder="Data de validade"
+            type="date"
+            value={produto.validade}
+            onChange={(e) => setProduto({ ...produto, validade: e.target.value })}
+          />
+          <Input
+            placeholder="Lote"
+            value={produto.lote}
+            onChange={(e) => setProduto({ ...produto, lote: e.target.value })}
+          />
+          <Button onClick={gerarQRCode}>Gerar QR Code</Button>
+
+          {qrCodeUrl && (
+            <div style={{ textAlign: "center" }}>
+              <img src={qrCodeUrl} alt="QR Code do Produto" style={{ marginTop: "1rem" }} />
+              <p style={{ fontSize: "0.875rem", color: "#6b7280", marginTop: "0.5rem" }}>Escaneie para ver os dados do produto</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card style={{ width: "100%", maxWidth: "500px" }}>
+        <CardContent style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", textAlign: "center" }}>Leitor de QR Code</h2>
+          <video ref={videoRef} style={{ width: "100%", borderRadius: "8px", border: "1px solid #ccc" }} />
+          <Button onClick={iniciarLeitor}>Iniciar Leitor</Button>
+
+          {dadosLidos && (
+            <div style={{ marginTop: "1rem", fontSize: "0.875rem" }}>
+              <p><strong>Produto:</strong> {dadosLidos.nome}</p>
+              <p><strong>Fabricação:</strong> {dadosLidos.fabricacao}</p>
+              <p><strong>Validade:</strong> {dadosLidos.validade}</p>
+              <p><strong>Lote:</strong> {dadosLidos.lote}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
